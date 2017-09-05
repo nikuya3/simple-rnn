@@ -97,10 +97,10 @@ class VanillaRNN:
         return np.argmax(y)
 
     def step(self, x):
-        f = self.w_hh.dot(self.h[-1]) + self.w_xh.dot(x)
-        f[f < 0] = 0
-        self.h.append(f)
-        #self.h.append(np.tanh(self.w_hh.dot(self.h[-1]) + self.w_xh.dot(x)))
+        # f = self.w_hh.dot(self.h[-1]) + self.w_xh.dot(x)
+        # f[f < 0] = 0
+        # self.h.append(f)
+        self.h.append(np.tanh(self.w_hh.dot(self.h[-1]) + self.w_xh.dot(x)))
         self.x.append(x)
         y = self.w_yh.dot(self.h[-1])
         return y
@@ -109,27 +109,27 @@ class VanillaRNN:
         # Backpropagation through time
         self.dw_yh += dy.dot(self.h[-1].T)
         self.dh = self.dw_yh.T.dot(dy)
-        # self.dw_xh += self.dh.dot(self.x[-1].T) * (1 - self.h[-1] ** 2)
-        # self.dw_hh += self.dh.dot(self.h[-2].T) * (1 - self.h[-1] ** 2)
-        f1 = self.dh.dot(self.x[-1].T) * (1 - self.h[-1] ** 2)
-        f1[f1 < 0] = 0
-        self.dw_xh += f1
-        f2 = self.dh.dot(self.h[-2].T) * (1 - self.h[-1] ** 2)
-        f2[f2 < 0] = 0
-        self.dw_hh += f2
+        self.dw_xh += self.dh.dot(self.x[-1].T)# * (1 - self.h[-1] ** 2)
+        self.dw_hh += self.dh.dot(self.h[-2].T)# * (1 - self.h[-1] ** 2)
+        # f1 = self.dh.dot(self.x[-1].T)
+        # f1[f1 < 0] = 0
+        # self.dw_xh += f1
+        # f2 = self.dh.dot(self.h[-2].T)
+        # f2[f2 < 0] = 0
+        # self.dw_hh += f2
         del self.h[-1]
         del self.x[-1]
 
     def update(self, eta, epoch, n):
-        # self.w_hh, self.m_whh, self.v_whh =\
-        #     update_parameter(self.w_hh, self.dw_hh, epoch, eta, self.m_whh, self.v_whh, beta1, beta2, eps)
-        # self.w_xh, self.m_wxh, self.v_wxh =\
-        #     update_parameter(self.w_xh, self.dw_xh, epoch, eta, self.m_wxh, self.v_wxh, beta1, beta2, eps)
-        # self.w_yh, self.m_wyh, self.v_wyh =\
-        #     update_parameter(self.w_yh, self.dw_yh, epoch, eta, self.m_wyh, self.v_wyh, beta1, beta2, eps)
-        self.w_hh -= eta * self.dw_hh
-        self.w_xh -= eta * self.dw_xh
-        self.w_yh -= eta * self.dw_yh
+        self.w_hh, self.m_whh, self.v_whh =\
+            update_parameter(self.w_hh, self.dw_hh, epoch, eta, self.m_whh, self.v_whh, beta1, beta2, eps)
+        self.w_xh, self.m_wxh, self.v_wxh =\
+            update_parameter(self.w_xh, self.dw_xh, epoch, eta, self.m_wxh, self.v_wxh, beta1, beta2, eps)
+        self.w_yh, self.m_wyh, self.v_wyh =\
+            update_parameter(self.w_yh, self.dw_yh, epoch, eta, self.m_wyh, self.v_wyh, beta1, beta2, eps)
+        # self.w_hh -= eta * self.dw_hh
+        # self.w_xh -= eta * self.dw_xh
+        # self.w_yh -= eta * self.dw_yh
 
 
 data = []
@@ -144,7 +144,7 @@ with open('data/hello.csv', 'r') as file:
 beta1 = .9  # Hyperparameter for Adam parameter update.
 beta2 = .999  # Hyperparameter for Adam parameter update.
 eps = 1e-8  # Hyperparameter for Adam parameter update.
-epochs = 60
+epochs = 50
 eta = 1e-4
 
 data = np.array(data)
@@ -153,7 +153,7 @@ x = data[:, :unique_chars]
 y = data[:, unique_chars]
 n = len(x)  # number of training observations
 k = np.unique(y).shape[0]  # number of classes
-rnn = VanillaRNN(unique_chars, 100, k)
+rnn = VanillaRNN(unique_chars, 1000, k)
 ch2n = {'h': x[0].reshape(x.shape[1], 1), 'e': x[1].reshape(x.shape[1], 1), 'l': x[2].reshape(x.shape[1], 1)}
 n2ch = {y[0]: 'e', y[1]: 'l', y[3]: 'o'}
 # ch2n = {
@@ -186,9 +186,11 @@ for epoch in range(1, epochs + 1):
         x_i = x[i].reshape(x.shape[1], 1)
         y_i = y[i]
         pred = rnn.step(x_i)
+        print(n2ch[np.argmax(pred)], end='')
         scores[i] = pred.reshape(k)
     loss = calculate_cross_entropy_loss(scores, y)
     acc = calculate_accuracy(scores, y)
+    print()
     print(epoch, loss, acc)
     losses.append(loss)
     accs.append(acc)
