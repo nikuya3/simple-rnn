@@ -144,7 +144,7 @@ with open('data/hello.csv', 'r') as file:
 beta1 = .9  # Hyperparameter for Adam parameter update.
 beta2 = .999  # Hyperparameter for Adam parameter update.
 eps = 1e-8  # Hyperparameter for Adam parameter update.
-epochs = 50
+epochs = 100
 eta = 1e-4
 
 data = np.array(data)
@@ -153,7 +153,7 @@ x = data[:, :unique_chars]
 y = data[:, unique_chars]
 n = len(x)  # number of training observations
 k = np.unique(y).shape[0]  # number of classes
-rnn = VanillaRNN(unique_chars, 1000, k)
+rnn = VanillaRNN(unique_chars, 200, k)
 ch2n = {'h': x[0].reshape(x.shape[1], 1), 'e': x[1].reshape(x.shape[1], 1), 'l': x[2].reshape(x.shape[1], 1)}
 n2ch = {y[0]: 'e', y[1]: 'l', y[3]: 'o'}
 # ch2n = {
@@ -182,15 +182,16 @@ losses = []
 accs = []
 for epoch in range(1, epochs + 1):
     scores = np.empty((n, k))
+    pred_word = ''
     for i in range(len(x)):
         x_i = x[i].reshape(x.shape[1], 1)
         y_i = y[i]
         pred = rnn.step(x_i)
-        print(n2ch[np.argmax(pred)], end='')
+        pred_word += n2ch[np.argmax(pred)]
         scores[i] = pred.reshape(k)
     loss = calculate_cross_entropy_loss(scores, y)
     acc = calculate_accuracy(scores, y)
-    print()
+    print(pred_word)
     print(epoch, loss, acc)
     losses.append(loss)
     accs.append(acc)
